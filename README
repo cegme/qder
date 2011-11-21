@@ -5,3 +5,9 @@ Contact @cegme on Twitter
 * qgram/qgram.sql -- A function for the creation of qgrams from strings.
 * bloomfilter/bf.sql -- The package to create and use the bloom filter
 
+
+# Examples
+
+# Requires
+
+* PostgreSQL with pgcrypto for bloom filter hashing
