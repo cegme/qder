@@ -10,15 +10,11 @@ import urllib2
 from urllib2 import urlopen
 
 url = 'http://partners-v1.twittersentiment.appspot.com/api/bulkClassifyJson'
-values = {'data':{'text': t }}
-plpy.notice(str(values))
+values = json.dumps({'data':[{'text': t }]})
 
-data = urllib.urlencode(values)
-req = urllib2.Request(url, data)
+req = urllib2.Request(url, values)
+r = urllib2.urlopen(req).read()
 
-r = urllib2.urlopen(req)
-
-#j = json.loads(r.read())
-#return int(j['data'][0]['polarity'])
-return 0
+j = json.loads(r)
+return int(j['data'][0]['polarity'])
 $$ LANGUAGE plpythonu;
