@@ -2,12 +2,12 @@
 -- A function to create qgrams from strings in postgres
 -- Taken from http://pages.stern.nyu.edu/~panos/datacleaning/qgrams.sql
 
-aREATE OR REPLACE FUNCTION cgrant_make_qgram(docid INT, q INT, words TEXT) 
-RETURNS TABLE (docid INT, pos INT, token text) AS $$
+CREATE OR REPLACE FUNCTION cgrant_make_qgram(docid integer, q integer, words TEXT) 
+RETURNS TABLE (docid integer, pos integer, token text) AS $$
 DECLARE 
   slen INT := length(words);
-  fpads TEXT := '\#\#\#\#\#\#\#';
-  bpads TEXT := '\%\%\%\%\%\%\%';
+  fpads TEXT := E'#######';
+  bpads TEXT := E'%%%%%%%';
 BEGIN
   RETURN QUERY SELECT docid, g, substr(substr(fpads,1,q-1) || upper(words) || substr(bpads,1,q-1), g, q)
     FROM generate_series(1, slen+q-1) AS g 
@@ -28,3 +28,30 @@ SELECT cgrant_make_qgram(1, 3, 'Hello');
  (1,7,O%%)
 (7 rows)
 */
+
+
+-- Compares two strings by creating qgrams
+CREATE OR REPLACE FUNCTION cgrant_compare(doc_id1 integer, s1 text, doc_id2 integer, s2 text, k integer) RETURNS TABLE (token text, token text) AS
+$$
+DECLARE s1len integer;
+DECLARE s2len integer;
+BEGIN
+	SELECT INTO s1len char_length FROM char_length(s1);
+	SELECT INTO s2len char_length FROM char_length(s2);
+	RAISE NOTICE 's1len: %, s2len: %', s1len, s2len;
+	RETURN QUERY	
+	SELECT d1.token, d2.token
+	FROM cgrant_make_qgram(doc_id1, 3, s1) as d1,
+	cgrant_make_qgram(doc_id2, 3, s2) as d2
+	WHERE d1.token = d2.token AND abs(d1.pos - d2.pos) < k
+	GROUP BY d1.token, d2.token;
+END;
+$$ LANGUAGE plpgsql;
+
+
+/*
+select cgrant_compare(0, 'The big black dog', 1, 'The bigger black dog', 4);
+*/
+
+
+
