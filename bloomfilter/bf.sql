@@ -68,7 +68,7 @@ $$
 DECLARE ind integer[];
 BEGIN
 	FOR i IN 1..k LOOP
-		ind[i] := abs(cgrant_hash1(text) + i * cgrant_hash2(text)) % m + 1;
+		ind[i] := abs(hashtext(text) + i * cgrant_hash2(text)) % m + 1;
 	END LOOP;
 	RETURN ind;
 END;
@@ -87,7 +87,8 @@ DECLARE bf cgrant_bf;
 BEGIN
 	bf := _bf;
 	FOR i IN 1..bf.k LOOP
-		ind := (abs(cgrant_hash1(s) + i * cgrant_hash2(s)) % bf.m) + 1;
+		--ind := (abs(cgrant_hash1(s) + i * cgrant_hash2(s)) % bf.m) + 1;
+		ind := (abs(hashtext(s) + i * cgrant_hash2(s)) % bf.m) + 1;
 		bf.vec[ind] := TRUE;
 	END LOOP;
 	RETURN bf;
@@ -101,7 +102,8 @@ $$
 DECLARE ind integer;
 BEGIN
 	FOR i in 1..bf.k LOOP
-		ind := (abs(cgrant_hash1(s) + i * cgrant_hash2(s)) % bf.m) + 1;
+		--ind := (abs(cgrant_hash1(s) + i * cgrant_hash2(s)) % bf.m) + 1;
+		ind := (abs(hashtext(s) + i * cgrant_hash2(s)) % bf.m) + 1;
 		IF NOT bf.vec[ind] THEN
 			RETURN FALSE;
 		END IF;
@@ -126,5 +128,43 @@ BEGIN
 	RETURN 0;
 END;
 $$ LANGUAGE plpgsql;
+
+
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+-- Here we insert some documents and bloom filters and test insertion/retrieval
+-- We will insert tweets
+------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION test_bf2() RETURNS integer AS
+$$
+DECLARE t1 CONSTANT text := E'Cardinals fall further behind in wild-card race (Sacramento Bee): Share With Friends:  |  | Top News - World... http://t.co/ZqbjVynq';
+DECLARE t2 CONSTANT text := E'Goooood job red raiders! Way to kick ass #wreckem';
+DECLARE t3 CONSTANT text := E'Work at 5am. the things I do to watch the redskins game on time';
+DECLARE t4 CONSTANT text := E'I know we better beat the fuckin falcons tomorrow...';
+DECLARE t5 CONSTANT text := E'Madden NFL 12 Review http://t.co/ZPqQidXf [news]';
+DECLARE b1 cgrant_bf;
+DECLARE b2 cgrant_bf;
+DECLARE b3 cgrant_bf;
+DECLARE b4 cgrant_bf;
+DECLARE b5 cgrant_bf;
+DECLARE t text;
+BEGIN
+	b1 := cgrant_bf_init(10000,30);
+	-- b2 := cgrant_bf_init(10000,30);
+	-- b3 := cgrant_bf_init(10000,30);
+	-- b4 := cgrant_bf_init(10000,30);
+	-- b5 := cgrant_bf_init(10000,30);
+	FOR t IN SELECT token FROM cgrant_make_qgram(1, 3, t1) LOOP
+		RAISE NOTICE '3grams %', t ;
+		b1 := cgrant_bf_add_value(t, b1);
+	END LOOP; 
+	RAISE NOTICE 'b1 size %, text size %', pg_column_size(b1), pg_column_size(t1);
+	RAISE NOTICE '%', cgrant_bf_contains('Can', b1);
+	-- TODO create more difficult test for the bloom filter
+	RETURN 0;
+END;
+$$ LANGUAGE plpgsql;
+
+
 
 
