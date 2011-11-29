@@ -2,7 +2,7 @@
 -- Twitter Sentiment API call
 -- https://sites.google.com/site/twittersentimenthelp/api
 
-CREATE OR REPLACE FUNCTION cgrant_sentiment(t text) RETURNS integer AS
+CREATE OR REPLACE FUNCTION cgrant_sentiment(t text) RETURNS char AS
 $$
 import json
 import urllib
@@ -16,5 +16,11 @@ req = urllib2.Request(url, values)
 r = urllib2.urlopen(req).read()
 
 j = json.loads(r)
-return int(j['data'][0]['polarity'])
+val = int(j['data'][0]['polarity'])
+if val == 0:
+	return '-'
+elif val == 4:
+	return '+'
+else:
+	return str(val)
 $$ LANGUAGE plpythonu;
