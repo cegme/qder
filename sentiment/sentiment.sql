@@ -18,9 +18,9 @@ r = urllib2.urlopen(req).read()
 j = json.loads(r)
 val = int(j['data'][0]['polarity'])
 if val == 0:
-	return '-'
+	return '-' # Negative
 elif val == 4:
-	return '+'
+	return '+' # Positive 
 else:
-	return str(val)
+	return 'o' # Neutral 
 $$ LANGUAGE plpythonu;
