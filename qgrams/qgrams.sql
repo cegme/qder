@@ -2,15 +2,15 @@
 -- A function to create qgrams from strings in postgres
 -- Taken from http://pages.stern.nyu.edu/~panos/datacleaning/qgrams.sql
 
-CREATE OR REPLACE FUNCTION cgrant_make_qgram(docid integer, q integer, words TEXT) 
-RETURNS TABLE (docid integer, pos integer, token text) AS $$
+CREATE OR REPLACE FUNCTION cgrant_make_qgram(docid numeric, q numeric, words TEXT) 
+RETURNS TABLE (docid numeric, pos numeric, token text) AS $$
 DECLARE 
-  slen INT := length(words);
+  slen integer := length(words);
   fpads TEXT := E'#######';
   bpads TEXT := E'%%%%%%%';
 BEGIN
-  RETURN QUERY SELECT docid, g, substr(substr(fpads,1,q-1) || upper(words) || substr(bpads,1,q-1), g, q)
-    FROM generate_series(1, slen+q-1) AS g 
+  RETURN QUERY SELECT docid, g::numeric, substr(substr(fpads,1,q::integer-1) || upper(words) || substr(bpads,1,q::integer-1), g, q::integer)
+    FROM generate_series(1, slen+q::integer-1) AS g 
     WHERE g <= slen + q-1;
 END;
 $$ LANGUAGE plpgsql STRICT IMMUTABLE;
@@ -31,7 +31,7 @@ SELECT cgrant_make_qgram(1, 3, 'Hello');
 
 
 -- Compares two strings by creating qgrams
-CREATE OR REPLACE FUNCTION cgrant_compare(doc_id1 integer, s1 text, doc_id2 integer, s2 text, k integer) RETURNS TABLE (token text, token text) AS
+CREATE OR REPLACE FUNCTION cgrant_compare(doc_id1 numeric, s1 text, doc_id2 numeric, s2 text, k numeric) RETURNS TABLE (token text, token text) AS
 $$
 DECLARE s1len integer;
 DECLARE s2len integer;
@@ -55,7 +55,7 @@ select cgrant_compare(0, 'The big black dog', 1, 'The bigger black dog', 4);
 
 
 
-CREATE OR REPLACE FUNCTION cgrant_distance(doc_id1 integer, s1 text, doc_id2 integer, s2 text, k integer) RETURNS decimal AS
+CREATE OR REPLACE FUNCTION cgrant_distance(doc_id1 numeric, s1 text, doc_id2 numeric, s2 text, k numeric) RETURNS decimal AS
 $$
 DECLARE s1len integer;
 DECLARE s2len integer;
@@ -78,6 +78,51 @@ BEGIN
 	END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+
+
+-- This is a qgram with out the padding
+CREATE OR REPLACE FUNCTION cgrant_make_naked_qgram(docid numeric, q numeric, words TEXT) 
+RETURNS TABLE (docid numeric, pos numeric, token text) AS $$
+DECLARE
+  slen integer := length(words);
+  fpads TEXT := E'#######';
+  bpads TEXT := E'%%%%%%%';
+BEGIN  RETURN QUERY SELECT docid, g::numeric, substr(upper(words), g, q::integer)
+    FROM generate_series(1, slen-q::integer+1) AS g
+    WHERE g <= slen;
+END;
+$$ LANGUAGE plpgsql STRICT IMMUTABLE;
+
+-- SELECT cgrant_make_naked_qgram(1,3,'Tim Tebow');
+-- (1,1,TIM) 
+-- (1,2,"IM ") 
+-- (1,3,"M T") 
+-- (1,4," TE") 
+-- (1,5,TEB) 
+-- (1,6,EBO) 
+-- (1,7,BOW) 
+
+
+
+-- Approximate find  for tweets_10000
+CREATE OR REPLACE FUNCTION cgrant_approx_find_10000(searchterm TEXT)
+RETURNS TABLE (docid NUMERIC) 
+AS
+$$
+SELECT qt.docid
+  FROM cgrant_make_naked_qgram(1,3, $1) AS st, qtweets_10000 AS qt
+  WHERE st.token = qt.gram
+  GROUP BY  qt.docid
+  HAVING COUNT(DISTINCT qt.gram) >= (SELECT COUNT(token) FROM cgrant_make_naked_qgram(1,3, $1))
+$$ LANGUAGE sql IMMUTABLE;
+
+-- SELECT docid FROM  cgrant_approx_find_10000('Dolphins')
+
+-- select t.twtext 
+-- from tweets_10000 t, cgrant_approx_find_10000('Dolphins') d
+-- where t.id = d.docid;
+
+
 
 
 
