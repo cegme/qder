@@ -122,7 +122,55 @@ $$ LANGUAGE sql IMMUTABLE;
 -- from tweets_10000 t, cgrant_approx_find_10000('Dolphins') d
 -- where t.id = d.docid;
 
+-- Compare approximate match with like:
+--(select twtext from tweets_10000 where twtext ILIKE '%Tim Tebow%')
+--except
+--(select t.twtext 
+--	from tweets_10000 t, cgrant_approx_find_10000('Tim Tebow') d
+--	where t.id = d.docid)
+--except
+--(select twtext from tweets_10000 where twtext ILIKE '%Tim Tebow%')
 
 
+
+
+-- tweets_1000
+CREATE OR REPLACE FUNCTION cgrant_approx_find_1000(searchterm TEXT)
+RETURNS TABLE (docid NUMERIC) 
+AS
+$$
+SELECT qt.docid
+  FROM cgrant_make_naked_qgram(1,3, $1) AS st, qtweets_1000 AS qt
+  WHERE st.token = qt.gram
+  GROUP BY  qt.docid
+  HAVING COUNT(DISTINCT qt.gram) >= (SELECT COUNT(token) FROM cgrant_make_naked_qgram(1,3, $1))
+$$ LANGUAGE sql IMMUTABLE;
+
+
+-- tweets_100
+CREATE OR REPLACE FUNCTION cgrant_approx_find_100(searchterm TEXT)
+RETURNS TABLE (docid NUMERIC) 
+AS
+$$
+SELECT qt.docid
+  FROM cgrant_make_naked_qgram(1,3, $1) AS st, qtweets_100 AS qt
+  WHERE st.token = qt.gram
+  GROUP BY  qt.docid
+  HAVING COUNT(DISTINCT qt.gram) >= (SELECT COUNT(token) FROM cgrant_make_naked_qgram(1,3, $1))
+$$ LANGUAGE sql IMMUTABLE;
+
+
+
+-- tweets_10
+CREATE OR REPLACE FUNCTION cgrant_approx_find_10(searchterm TEXT)
+RETURNS TABLE (docid NUMERIC) 
+AS
+$$
+SELECT qt.docid
+  FROM cgrant_make_naked_qgram(1,3, $1) AS st, qtweets_10 AS qt
+  WHERE st.token = qt.gram
+  GROUP BY  qt.docid
+  HAVING COUNT(DISTINCT qt.gram) >= (SELECT COUNT(token) FROM cgrant_make_naked_qgram(1,3, $1))
+$$ LANGUAGE sql IMMUTABLE;
 
 
