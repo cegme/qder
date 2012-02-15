@@ -2,14 +2,14 @@
 -- A function to create qgrams from strings in postgres
 -- Taken from http://pages.stern.nyu.edu/~panos/datacleaning/qgrams.sql
 
-CREATE OR REPLACE FUNCTION cgrant_make_qgram(docid numeric, q numeric, words TEXT) 
+CREATE OR REPLACE FUNCTION cgrant_make_qgram(doc_id numeric, q numeric, words TEXT) 
 RETURNS TABLE (docid numeric, pos numeric, token text) AS $$
 DECLARE 
   slen integer := length(words);
   fpads TEXT := E'#######';
   bpads TEXT := E'%%%%%%%';
 BEGIN
-  RETURN QUERY SELECT docid, g::numeric, substr(substr(fpads,1,q::integer-1) || upper(words) || substr(bpads,1,q::integer-1), g, q::integer)
+  RETURN QUERY SELECT doc_id, g::numeric, substr(substr(fpads,1,q::integer-1) || upper(words) || substr(bpads,1,q::integer-1), g, q::integer)
     FROM generate_series(1, slen+q::integer-1) AS g 
     WHERE g <= slen + q-1;
 END;
@@ -31,7 +31,7 @@ SELECT cgrant_make_qgram(1, 3, 'Hello');
 
 
 -- Compares two strings by creating qgrams
-CREATE OR REPLACE FUNCTION cgrant_compare(doc_id1 numeric, s1 text, doc_id2 numeric, s2 text, k numeric) RETURNS TABLE (token text, token text) AS
+CREATE OR REPLACE FUNCTION cgrant_compare(doc_id1 numeric, s1 text, doc_id2 numeric, s2 text, k numeric) RETURNS TABLE (token1 text, token2 text) AS
 $$
 DECLARE s1len integer;
 DECLARE s2len integer;
@@ -81,13 +81,13 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 
 -- This is a qgram with out the padding
-CREATE OR REPLACE FUNCTION cgrant_make_naked_qgram(docid numeric, q numeric, words TEXT) 
+CREATE OR REPLACE FUNCTION cgrant_make_naked_qgram(doc_id numeric, q numeric, words TEXT) 
 RETURNS TABLE (docid numeric, pos numeric, token text) AS $$
 DECLARE
   slen integer := length(words);
   fpads TEXT := E'#######';
   bpads TEXT := E'%%%%%%%';
-BEGIN  RETURN QUERY SELECT docid, g::numeric, substr(upper(words), g, q::integer)
+BEGIN  RETURN QUERY SELECT doc_id, g::numeric, substr(upper(words), g, q::integer)
     FROM generate_series(1, slen-q::integer+1) AS g
     WHERE g <= slen;
 END;
