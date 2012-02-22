@@ -18,7 +18,8 @@ CREATE OR REPLACE FUNCTION cgrant_postag(doc TEXT)
 RETURNS SETOF pair AS
 $$
 import nltk
-return nltk.pos_tag(nltk.word_tokenize(doc))
+from django.utils.encoding import smart_unicode
+return nltk.pos_tag(nltk.word_tokenize(smart_unicode(doc, errors='ignore')))
 $$ LANGUAGE plpythonu;
 
 -- select cgrant_postag('And now for something completely different');
@@ -38,8 +39,9 @@ RETURNS SETOF netriple AS
 $$
 import nltk
 from types import TupleType
+from django.utils.encoding import smart_unicode
 seq = 0
-tok = nltk.word_tokenize(doc)
+tok = nltk.word_tokenize(smart_unicode(doc, errors='ignore'))
 pos = nltk.pos_tag(tok)
 chunk = nltk.ne_chunk(pos, hardtags)
 array = []
