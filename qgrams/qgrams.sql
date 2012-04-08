@@ -57,6 +57,7 @@ select cgrant_compare(0, 'The big black dog', 1, 'The bigger black dog', 4);
 
 CREATE OR REPLACE FUNCTION cgrant_distance(doc_id1 numeric, s1 text, doc_id2 numeric, s2 text, k numeric) RETURNS decimal AS
 $$
+-- The parameter k is a window size in which to perform comparison
 DECLARE s1len integer;
 DECLARE s2len integer;
 DECLARE qlen integer := 3;

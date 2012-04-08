@@ -54,6 +54,27 @@ for res in chunk:
 			array.append((seq, x[0][0], x[0][1], x[1]))
 		seq += 1
 return array
-$$ LANGUAGE plpythonu Volatile;
+$$ LANGUAGE plpythonu IMMUTABLE;
 
 select cgrant_ne_chunk('Kirn began his career in psychology, graduating from UF with a masters degree in clinical psychology in 1971 and a doctorate in the same subject in 1974. While at UF, he met his wife, Katrine, who also earned her doctorate in clinical psychology at UF. He worked in the mental health field for six years, first as an intern and later at community mental health centers and in a private practice in Kentucky that he owned with his wife. He also was a full-time faculty member at Bellarmine University in Louisville for six years.', true)
+
+
+-- This function merges neighboring functions with the same named entity type
+CREATE OR REPLACE FUNCTION cgrant_ne(sentence TEXT)
+RETURNS SETOF netriple AS 
+$$
+SELECT termnum, string_agg(term,' ') as term, pos, tag
+FROM cgrant_ne_chunk($1, False)
+WHERE tag IS NOT NULL
+GROUP BY termnum,pos,tag
+$$ LANGUAGE SQL IMMUTABLE;
+
+
+
+
+
+
+
+
+
+
