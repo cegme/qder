@@ -4,10 +4,10 @@
  
 ----------------------------------------------------------------------
 -- We need a table to hold the (id,para,token) map
-CREATE TABLE tokencounts (id varchar, para int, token varchar);
+CREATE TABLE tokencounts (id varchar, para int, token varchar, alias varchar);
 
 INSERT INTO TABLE tokencounts
-SELECT id, para, (p).token, (p).alias, p, paragraph
+SELECT id, para, (p).token, (p).alias, p--, paragraph we dont want the paragraph
 FROM(
 	SELECT d.id, d.para, d.paragraph, ts_debug(d.paragraph) as p
 	FROM NYTDATA d) ts
@@ -28,6 +28,11 @@ COPY (
 		'tag', 'entity'))
 	TO '/var/tmp/nyt_tokens.csv' WITH DELIMITER ',' CSV HEADER;
 
+-- Bulkload the data into the tokencounts table
+COPY tokencounts(id,para,token,alias)
+FROM '/var/tmp/nyt_tokens.csv'
+WITH DELIMITER ','
+CSV HEADER;
 -- TODO - Alter table and add indexes. It may be helpful to sort the table
 
 
